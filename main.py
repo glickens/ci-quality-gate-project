@@ -1,2 +1,2 @@
-print("CI trigger run")
+print("ci trigger run")
 

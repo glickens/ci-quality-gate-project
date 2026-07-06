@@ -1,2 +1,2 @@
-print("CI Quality Gate Project")
+print("CI trigger run")
 

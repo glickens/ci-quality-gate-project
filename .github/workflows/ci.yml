@@ -32,10 +32,11 @@ jobs:
       - name: Run tests with coverage
         run: |
           coverage run -m pytest
+          coverage xml
           coverage report --fail-under=80
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

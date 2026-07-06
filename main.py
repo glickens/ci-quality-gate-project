@@ -1,2 +1,2 @@
-print("ci final trigger run")
-
+def add(a, b):
+    return a + b

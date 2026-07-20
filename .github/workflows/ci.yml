@@ -46,7 +46,7 @@ jobs:
           coverage report --fail-under=80
 
       - name: SonarCloud scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -111,4 +111,5 @@ jobs:
             "${{ vars.STAGING_URL }}/health"
 
       - name: Deployment completed
-        run: echo "Staging deployment and smoke test completed successfully."
+        run: |
+          echo "Staging deployment and smoke test completed successfully."

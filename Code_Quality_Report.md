@@ -1,4 +1,4 @@
-# Code Quality Metrics Report
+WA 2# Code Quality Metrics Report
 
 ## Project Overview
 
@@ -24,7 +24,7 @@ If coverage falls below the required threshold, the workflow fails and prevents 
 
 ## Linting Validation
 
-Flake8 is executed during the CI process.
+Flake8 is executed during the CI process.7
 
 The workflow fails when critical Python syntax and code quality errors are detected.
 

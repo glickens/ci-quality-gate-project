@@ -1,13 +1,17 @@
-name: CI Quality Gate
+name: CI/CD Staging Pipeline
 
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - master
+      - feature/staging-deployment
   pull_request:
-    branches: [ "master" ]
+    branches:
+      - master
 
 jobs:
   build:
+    name: Build and Validate
     runs-on: ubuntu-latest
 
     steps:
@@ -24,10 +28,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov flake8 coverage
+          pip install -r requirements.txt
 
       - name: Run linting
-        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        run: |
+          flake8 . \
+            --exclude=.git,.venv,__pycache__,staging \
+            --count \
+            --select=E9,F63,F7,F82 \
+            --show-source \
+            --statistics
 
       - name: Run tests with coverage
         run: |
@@ -35,8 +45,70 @@ jobs:
           coverage xml
           coverage report --fail-under=80
 
-      - name: SonarCloud Scan
+      - name: SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Package application artifact
+        run: |
+          mkdir application-package
+          cp main.py application-package/
+          cp requirements.txt application-package/
+          cp -r scripts application-package/
+          tar -czf staging-application.tar.gz application-package
+
+      - name: Upload application artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-application
+          path: staging-application.tar.gz
+          retention-days: 7
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+
+    if: github.event_name == 'push'
+
+    environment:
+      name: Staging
+      url: ${{ vars.STAGING_URL }}
+
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v4
+
+      - name: Download application artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: staging-application
+
+      - name: Extract application artifact
+        run: |
+          tar -xzf staging-application.tar.gz
+          ls -la application-package
+
+      - name: Verify deployment package
+        run: |
+          test -f application-package/main.py
+          test -f application-package/requirements.txt
+          test -f application-package/scripts/deploy_staging.py
+          echo "Artifact retrieved and verified."
+
+      - name: Trigger Render staging deployment
+        run: |
+          curl --fail --request POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+
+      - name: Wait for staging application
+        run: sleep 90
+
+      - name: Run staging smoke test
+        run: |
+          curl --fail --retry 10 --retry-delay 15 \
+            "${{ vars.STAGING_URL }}/health"
+
+      - name: Deployment completed
+        run: echo "Staging deployment and smoke test completed successfully."
